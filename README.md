@@ -1,103 +1,69 @@
 # n8n Automation Workflows (Lite)
 
-Production-ready n8n workflow templates built with clean structure and practical patterns — simplified for quick setup and testing.
+Ready-to-use automation templates for n8n. Set up in minutes — no coding required.
 
-This public repository contains **Lite versions** of two automation workflows designed to demonstrate secure webhook handling, validation logic, and structured business integrations without framework complexity.
-
----
-
-## 📦 Included Workflows
-
-### 1. Stripe Payment Webhook (Lite)
-
-A secure Stripe webhook example.
-
-**Features**
-- Verifies Stripe webhook signatures  
-- Handles `payment_intent.succeeded`  
-- Handles `checkout.session.completed`  
-- Returns structured JSON responses  
-- Optional Slack notification  
-
-Designed as a minimal, secure starting point for payment automation.
-
-**Files**
-- `01_stripe_webhook_lite.json`
-- `01_stripe_webhook_lite.md`
+These workflows help you capture leads from forms, get notified when payments happen, and connect your favorite tools like Google Sheets and Slack.
 
 ---
 
-### 2. Lead Intake Webhook (Lite)
+## What’s Included
 
-A structured lead capture automation.
+### Lead Intake Webhook
+**Best for:** Capturing form submissions (landing pages, contact forms, Typeform, Tally, etc.)
 
-**Features**
-- Webhook endpoint for form submissions  
-- Email validation  
-- Dedupe via `lead_key`  
-- Google Sheets append/update  
-- Optional Slack notification  
-- Clean JSON responses  
+- Saves leads to Google Sheets
+- Validates email addresses
+- Optional Slack notifications
+- Avoids duplicate entries
 
-Designed for quick deployment with form builders or landing pages.
-
-**Files**
-- `02_lead_intake_lite.json`
-- `02_lead_intake_lite.md`
+**Start here** — this is the easiest workflow to set up.
 
 ---
 
-## What These Lite Workflows Demonstrate
+### Stripe Payment Webhook
+**Best for:** Reacting to Stripe payments (one-time or checkout)
 
-- Clean branching logic  
-- Secure webhook handling  
-- Structured data normalization  
-- Deterministic error responses  
-- Practical third-party integrations  
-
-They are intentionally lightweight and do not include advanced production features.
-
----
-
-## What’s Not Included
-
-These Lite versions do **not** include:
-
-- Idempotency data tables  
-- Structured run logging  
-- Metrics tracking  
-- Retry frameworks  
-- Advanced observability patterns  
-- AI-based automations  
-
-Those features are part of the full Production Automation Framework.
+- Securely receives payment events from Stripe
+- Optional Slack notifications when payments complete
+- Handles both payment intents and checkout sessions
 
 ---
 
 ## Getting Started
 
-1. Run n8n (self-hosted or n8n Cloud).
-2. Import one of the `.json` files into n8n.
-3. Follow the corresponding `.md` setup guide.
-4. Configure credentials.
-5. Activate and test.
-
-Each workflow includes detailed setup instructions.
-
----
-
-## Intended Use
-
-These workflows are suitable for:
-
-- Learning structured automation patterns  
-- Quick client demos  
-- Testing webhook-based integrations  
-- Lightweight internal automation  
-
-For production deployments with structured logging, idempotency handling, and scalable architecture patterns, see the Pro version.
+1. **Have n8n ready** — Sign in to your n8n account (n8n Cloud or self-hosted).
+2. **Pick a workflow** — We recommend starting with Lead Intake.
+3. **Import the files** — Use **Workflows** → **Import from File** and choose the `.json` file from the right folder.
+4. **Follow the setup guide** — Each workflow has a matching guide (`.md` file) with step-by-step instructions.
+5. **Connect your tools** — Add your Google, Slack, or Stripe credentials when prompted.
+6. **Turn it on** — Click **Activate** and you’re done.
 
 ---
 
-## 📄 License
+## Files and Folders
+
+| Workflow | Folder | What to import |
+|----------|--------|----------------|
+| Lead Intake | `02-lead-intake-lite/` | `02_lead_intake_lite.json` |
+| Stripe Payment | `01-stripe-webhook-lite/` | `01_stripe_webhook_lite.json` + `util_stripe_verify_signature.json` |
+
+**Tip:** For Stripe, import the helper workflow (`util_stripe_verify_signature.json`) first, then the main workflow. The setup guide has the full order.
+
+---
+
+## Finding Your Webhook URL
+
+After you activate a workflow, n8n gives it a webhook URL. You’ll need this to connect your forms or Stripe.
+
+**How to find it:**
+1. Open your workflow in n8n.
+2. Click the **Webhook** node (usually the first node on the left).
+3. Look for **Production URL** or **Test URL** in the node panel.
+4. Your full URL will look like: `https://your-instance.app.n8n.cloud/webhook/leads` (Lead Intake) or `.../webhook/stripe/payment` (Stripe).
+
+Use this URL in your form builder’s webhook field, or when setting up Stripe webhooks.
+
+---
+
+## License
 MIT License

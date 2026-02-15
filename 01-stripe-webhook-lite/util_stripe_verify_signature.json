@@ -1,0 +1,371 @@
+{
+  "name": "util_stripe_verify_signature",
+  "nodes": [
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.stripe_ts }}.{{ $json.raw_body }}",
+        "dataPropertyName": "computed",
+        "secret": "={{ $json.value }}"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        912,
+        -176
+      ],
+      "id": "9cacffbd-367d-4275-8b33-28e393f751b8",
+      "name": "CRYPTO:hmac_sha256"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6e94420e-dcd4-409a-bb49-fc70c28f2be8",
+              "leftValue": "={{ $json.computed }}",
+              "rightValue": "={{ $json.stripe_signature }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1136,
+        -176
+      ],
+      "id": "4d5d3abb-3966-40ec-97c0-d9dbcfb3d9dd",
+      "name": "IF:signature_valid"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "binary_property_name"
+            },
+            {
+              "name": "tolerance_seconds"
+            },
+            {
+              "name": "headers"
+            }
+          ]
+        }
+      },
+      "id": "f1913636-8fd0-4d9c-915c-2b559b87f52d",
+      "typeVersion": 1.1,
+      "name": "TR:when_executed",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        16,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const signingSecret = $input.item.json.signing_secret;\nconst toleranceSeconds = Number($input.item.json.tolerance_seconds ?? 300);\nconst binaryPropertyName = $input.item.json.binary_property_name ?? 'data';\nconst itemIndex = 0\nconst headers = $input.item.json.headers ?? {};\n\nconst sigHeader = headers['stripe-signature'] ?? null;\nif (!sigHeader) {\n  return {\n    authenticated: false,\n    status_code: 400,\n    error: 'missing_signature_header',\n    headers: null,\n    body: null,\n    raw_body: null,\n  };\n}\n\n// Get raw request body from binary\nlet rawBody;\ntry {\n  const rawBuffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryPropertyName);\n  rawBody = rawBuffer.toString('utf8');\n} catch (e) {\n  return {\n    authenticated: false,\n    status_code: 400,\n    error: 'missing_raw_body',\n    headers: null,\n    body: null,\n    raw_body: null,\n  };\n}\n\n// Parse Stripe signature header\nlet timestamp = '';\nlet sigV1 = '';\nfor (const part of String(sigHeader).split(',')) {\n  const [k, v] = part.split('=');\n  if (k === 't') timestamp = v;\n  if (k === 'v1') sigV1 = v;\n}\n\nconst tsNum = Number(timestamp);\nif (!Number.isFinite(tsNum)) {\n  return {\n    authenticated: false,\n    status_code: 400,\n    error: 'invalid_timestamp_format',\n    headers: null,\n    body: null,\n    raw_body: null,\n  };\n}\n\n// Timestamp tolerance check\nconst now = Math.floor(Date.now() / 1000);\nif (Math.abs(now - tsNum) > toleranceSeconds) {\n  return {\n    authenticated: false,\n    status_code: 400,\n    error: 'invalid_timestamp',\n    headers: null,\n    body: null,\n    raw_body: null,\n  };\n}\n\nlet parsedBody = null;\ntry { parsedBody = JSON.parse(rawBody); } catch {}\n\nreturn {\n  authenticated: null,\n  status_code: 200,\n  error: null,\n  headers,\n  body: parsedBody,\n  raw_body: rawBody,\n  stripe_ts: String(timestamp),\n  stripe_signature: String(sigV1)\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -176
+      ],
+      "id": "10eb7f29-1a28-40f5-b5d2-730269781aef",
+      "name": "FN:prepare"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "451034e4-6804-460c-8f01-565f17e7d5c6",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        -176
+      ],
+      "id": "6ab4cd12-1e66-42ab-be4b-41feb96a29c1",
+      "name": "IF:has_error"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0fb456f9-3451-41fd-9e45-448dfde4a394",
+              "name": "authenticated",
+              "value": "=false",
+              "type": "boolean"
+            },
+            {
+              "id": "d40fa353-b770-49d7-b0cc-bbdbdb3ebc5b",
+              "name": "status_code",
+              "value": "=401",
+              "type": "number"
+            },
+            {
+              "id": "3b1d89b9-c9ac-43a8-beec-f3072bf8fd43",
+              "name": "error",
+              "value": "=signature_not_matched",
+              "type": "string"
+            },
+            {
+              "id": "d30d6eda-aba8-490e-ba43-190dc54244db",
+              "name": "body",
+              "value": "={{ null }}",
+              "type": "object"
+            },
+            {
+              "id": "ac002789-78a3-421d-a2c6-d3588917dc5a",
+              "name": "headers",
+              "value": "={{ null }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1360,
+        -80
+      ],
+      "id": "9eb07234-ff0c-4e5b-8b00-69e782209da7",
+      "name": "SET:util_output_invalid"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0fb456f9-3451-41fd-9e45-448dfde4a394",
+              "name": "authenticated",
+              "value": "=true",
+              "type": "boolean"
+            },
+            {
+              "id": "d40fa353-b770-49d7-b0cc-bbdbdb3ebc5b",
+              "name": "status_code",
+              "value": "={{ $json.status_code }}",
+              "type": "number"
+            },
+            {
+              "id": "3b1d89b9-c9ac-43a8-beec-f3072bf8fd43",
+              "name": "error",
+              "value": "={{ $('CRYPTO:hmac_sha256').item.json.error }}",
+              "type": "string"
+            },
+            {
+              "id": "d30d6eda-aba8-490e-ba43-190dc54244db",
+              "name": "body",
+              "value": "={{ $json.body }}",
+              "type": "object"
+            },
+            {
+              "id": "ac002789-78a3-421d-a2c6-d3588917dc5a",
+              "name": "headers",
+              "value": "={{ $json.headers }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1360,
+        -272
+      ],
+      "id": "7feac583-b3b8-4cfd-877b-a2b2445d3b9e",
+      "name": "SET:util_output_valid"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1584,
+        -176
+      ],
+      "id": "16fe9f06-8afe-439b-a39f-284127276cc2",
+      "name": "MERGE:output_data"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "DZzlZnPceHZWaV8T",
+          "mode": "list",
+          "cachedResultName": "variables",
+          "cachedResultUrl": "/projects/tmI5k4n5erPrgpp2/datatables/DZzlZnPceHZWaV8T"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "keyValue": "stripe_secret"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -176
+      ],
+      "id": "fcef73f2-23c7-4da1-88a9-0d46272db7a1",
+      "name": "DT:get_signing_secret"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "CRYPTO:hmac_sha256": {
+      "main": [
+        [
+          {
+            "node": "IF:signature_valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF:signature_valid": {
+      "main": [
+        [
+          {
+            "node": "SET:util_output_valid",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SET:util_output_invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TR:when_executed": {
+      "main": [
+        [
+          {
+            "node": "FN:prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FN:prepare": {
+      "main": [
+        [
+          {
+            "node": "IF:has_error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF:has_error": {
+      "main": [
+        [
+          {
+            "node": "DT:get_signing_secret",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "SET:util_output_valid": {
+      "main": [
+        [
+          {
+            "node": "MERGE:output_data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET:util_output_invalid": {
+      "main": [
+        [
+          {
+            "node": "MERGE:output_data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "DT:get_signing_secret": {
+      "main": [
+        [
+          {
+            "node": "CRYPTO:hmac_sha256",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "73277bf8-fa9b-427c-952b-ccc1f0f477ee",
+  "meta": {
+    "instanceId": "5ee3c9ff8afcc426074d3a5eb8ddc86bde35a2b5a157bbfa5230516d89fee81e"
+  },
+  "id": "tFZT42m6nAco8yc0",
+  "tags": []
+}

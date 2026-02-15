@@ -1,0 +1,148 @@
+{
+  "name": "02_lead_intake_lite",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "leads",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 200],
+      "id": "b1-webhook",
+      "name": "TW:webhook_lead",
+      "webhookId": "leads-lite-webhook-id"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $json.body || $json;\n\nconst email = String(b.email ?? '').trim().toLowerCase();\nif (!email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {\n  return [{ json: { ok: false, error: 'invalid_email' } }];\n}\n\nconst name = String(b.name ?? '').trim();\nconst phone = String(b.phone ?? '').trim();\nconst source = String(b.source ?? 'unknown').trim();\n\nconst now = new Date().toISOString();\nconst leadKey = `lead:${email}|${source}`;\n\nreturn [{\n  json: {\n    ok: true,\n    lead: {\n      lead_key: leadKey,\n      email,\n      name,\n      phone,\n      source,\n      status: 'new',\n      created_at: now,\n      last_seen_at: now\n    },\n    body: b\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 200],
+      "id": "b2-validate",
+      "name": "FN:lead_validate_normalize"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "lead-valid",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [336, 200],
+      "id": "b2b-if",
+      "name": "IF:lead_valid"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "mode": "list" },
+        "sheetName": { "__rl": true, "mode": "list" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_key": "={{ $json.lead.lead_key }}",
+            "email": "={{ $json.lead.email }}",
+            "name": "={{ $json.lead.name }}",
+            "phone": "={{ $json.lead.phone }}",
+            "source": "={{ $json.lead.source }}",
+            "status": "={{ $json.lead.status }}",
+            "created_at": "={{ $json.lead.created_at }}",
+            "raw_json": "={{ JSON.stringify($json.body) }}",
+            "last_seen_at": "={{ $json.lead.last_seen_at }}"
+          },
+          "matchingColumns": ["lead_key"],
+          "schema": [
+            { "id": "lead_key", "displayName": "lead_key", "canBeUsedToMatch": true, "type": "string" },
+            { "id": "email", "displayName": "email", "type": "string" },
+            { "id": "name", "displayName": "name", "type": "string" },
+            { "id": "phone", "displayName": "phone", "type": "string" },
+            { "id": "source", "displayName": "source", "type": "string" },
+            { "id": "status", "displayName": "status", "type": "string" },
+            { "id": "created_at", "displayName": "created_at", "type": "string" },
+            { "id": "raw_json", "displayName": "raw_json", "type": "string" },
+            { "id": "last_seen_at", "displayName": "last_seen_at", "type": "string" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [448, 96],
+      "id": "b3-sheets",
+      "name": "GS:leads_upsert"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": { "__rl": true, "mode": "list" },
+        "text": "=New lead: {{ $json.email }}\nName: {{ $json.name || 'n/a' }}\nPhone: {{ $json.phone || 'n/a' }}\nSource: {{ $json.source }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [672, 96],
+      "id": "b4-slack",
+      "name": "SLACK:notify_lead",
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"ok\"\n}",
+        "options": { "responseCode": 200 }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [896, 96],
+      "id": "b5-resp-ok",
+      "name": "RS:respond_ok"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"error\",\n  \"error\": \"{{ $json.error || 'invalid_email' }}\"\n}",
+        "options": { "responseCode": 400 }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [448, 304],
+      "id": "b6-resp-error",
+      "name": "RS:respond_error"
+    }
+  ],
+  "connections": {
+    "TW:webhook_lead": { "main": [[{ "node": "FN:lead_validate_normalize", "type": "main", "index": 0 }]] },
+    "FN:lead_validate_normalize": { "main": [[{ "node": "IF:lead_valid", "type": "main", "index": 0 }]] },
+    "IF:lead_valid": {
+      "main": [
+        [{ "node": "GS:leads_upsert", "type": "main", "index": 0 }],
+        [{ "node": "RS:respond_error", "type": "main", "index": 0 }]
+      ]
+    },
+    "GS:leads_upsert": { "main": [[{ "node": "SLACK:notify_lead", "type": "main", "index": 0 }]] },
+    "SLACK:notify_lead": {
+      "main": [
+        [{ "node": "RS:respond_ok", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": false }
+}
