@@ -8,7 +8,7 @@ This public repository contains **Lite versions** of two automation workflows de
 
 ## 📦 Included Workflows
 
-### 1️⃣ Stripe Payment Webhook (Lite)
+### 1. Stripe Payment Webhook (Lite)
 
 A secure Stripe webhook example.
 
@@ -27,7 +27,7 @@ Designed as a minimal, secure starting point for payment automation.
 
 ---
 
-### 2️⃣ Lead Intake Webhook (Lite)
+### 2. Lead Intake Webhook (Lite)
 
 A structured lead capture automation.
 
@@ -47,7 +47,7 @@ Designed for quick deployment with form builders or landing pages.
 
 ---
 
-## 🧠 What These Lite Workflows Demonstrate
+## What These Lite Workflows Demonstrate
 
 - Clean branching logic  
 - Secure webhook handling  
@@ -59,7 +59,7 @@ They are intentionally lightweight and do not include advanced production featur
 
 ---
 
-## 🚫 What’s Not Included
+## What’s Not Included
 
 These Lite versions do **not** include:
 
@@ -74,7 +74,7 @@ Those features are part of the full Production Automation Framework.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 1. Run n8n (self-hosted or n8n Cloud).
 2. Import one of the `.json` files into n8n.
@@ -86,7 +86,7 @@ Each workflow includes detailed setup instructions.
 
 ---
 
-## 🎯 Intended Use
+## Intended Use
 
 These workflows are suitable for:
 
@@ -100,5 +100,12 @@ For production deployments with structured logging, idempotency handling, and sc
 ---
 
 ## 📄 License
+MIT License
 
-Add your chosen license here (MIT recommended for Lite, or a custom license if you prefer controlled reuse).
+Copyright (c) [YEAR] [YOUR NAME]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
